@@ -1,0 +1,17 @@
+arxiv==2.4.0
+pydantic==2.12.5
+pydantic-settings==2.13.1
+python-dotenv==1.2.1
+requests==2.32.5
+types-requests==2.32.4.20260107
+url-normalize==2.2.1
+tenacity==9.1.4
+streamlit==1.54.0
+docling==2.75.0
+
+# Monitoring
+structlog==25.5.0
+
+# Development
+mypy==1.19.1
+pytest==9.0.2
