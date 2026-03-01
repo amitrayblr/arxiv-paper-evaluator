@@ -5,6 +5,7 @@ import requests
 
 from src.config import settings
 from src.object_types import PdfDownloadResult
+from src.utils import remove_file_if_exists
 
 
 def download_pdf(pdf_url: str, output_path: str | Path) -> PdfDownloadResult:
@@ -12,12 +13,11 @@ def download_pdf(pdf_url: str, output_path: str | Path) -> PdfDownloadResult:
 
     output_file_path = Path(output_path)
     output_file_path.parent.mkdir(parents=True, exist_ok=True)
-    request_headers = {"User-Agent": settings.pdf_user_agent}
 
     try:
         with requests.get(
             pdf_url,
-            headers=request_headers,
+            headers={"User-Agent": settings.pdf_user_agent},
             stream=True,
             timeout=settings.pdf_timeout,
         ) as response:
@@ -28,12 +28,10 @@ def download_pdf(pdf_url: str, output_path: str | Path) -> PdfDownloadResult:
                 output_file_path=output_file_path,
             )
     except requests.RequestException as error:
-        if output_file_path.exists():
-            output_file_path.unlink()
+        remove_file_if_exists(output_file_path)
         raise RuntimeError(f"Failed to download PDF: {pdf_url}") from error
     except (OSError, ValueError):
-        if output_file_path.exists():
-            output_file_path.unlink()
+        remove_file_if_exists(output_file_path)
         raise
 
     return PdfDownloadResult(

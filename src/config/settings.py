@@ -20,6 +20,12 @@ class Settings(BaseSettings):
     pdf_chunk_size: int = 8192
     pdf_user_agent: str = "arxiv-paper-evaluator/0.1"
 
+    docling_artifacts_path: str = "data/docling-artifacts"
+
+    cleaning_tokenizer_name: str = "bert-base-uncased"
+    cleaning_max_tokens_per_chunk: int = 3000
+    cleaning_chunk_overlap_tokens: int = 200
+
     @property
     def pdf_timeout(self) -> tuple[float, float]:
         return (self.pdf_connect_timeout_seconds, self.pdf_read_timeout_seconds)

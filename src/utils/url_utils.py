@@ -2,7 +2,6 @@ import re
 from urllib.parse import unquote, urlparse
 from url_normalize import url_normalize
 
-
 ARXIV_ID_PATTERN = re.compile(r"^(?:\d{4}\.\d{4,5}|[A-Za-z\-]+(?:\.[A-Za-z\-]+)?/\d{7})(?:v\d+)?$")
 
 
@@ -10,26 +9,18 @@ def _normalize_url(raw_url: str) -> str:
     if not isinstance(raw_url, str) or not raw_url.strip():
         raise ValueError("Invalid URL")
 
-    candidate = raw_url.strip()
-
-    # Reject malformed URLs
-    if candidate.startswith("http:/") and not candidate.startswith("http://"):
-        raise ValueError("Invalid URL")
-    if candidate.startswith("https:/") and not candidate.startswith("https://"):
-        raise ValueError("Invalid URL")
-    if candidate.startswith("http//") or candidate.startswith("https//"):
+    normalized_url = url_normalize(raw_url.strip(), default_scheme="https")
+    if not isinstance(normalized_url, str) or not normalized_url:
         raise ValueError("Invalid URL")
 
-    if "://" in candidate:
-        scheme = candidate.split("://", 1)[0].lower()
-        if scheme not in {"http", "https"}:
-            raise ValueError("Invalid URL")
+    parsed_url = urlparse(normalized_url)
 
-    normalized = url_normalize(candidate, default_scheme="https")
-    if isinstance(normalized, str) and normalized:
-        return normalized
+    if parsed_url.scheme not in {"http", "https"}:
+        raise ValueError("Invalid URL")
+    if not parsed_url.hostname:
+        raise ValueError("Invalid URL")
 
-    raise ValueError("Invalid URL")
+    return normalized_url
 
 
 def _path_parts(path: str) -> list[str]:
@@ -47,9 +38,18 @@ def validate_arxiv_url(raw_url: str) -> str:
     if host.startswith("www."):
         host = host[4:]
 
-    parts = _path_parts(parsed_url.path)
-    if host != "arxiv.org" or len(parts) < 2 or parts[0] not in {"abs", "pdf", "html"}:
+    if host != "arxiv.org":
         raise ValueError("Invalid URL")
+
+    parts = _path_parts(parsed_url.path)
+    if len(parts) < 2 or parts[0] not in {"abs", "pdf", "html"}:
+        raise ValueError("Invalid URL")
+
+    try:
+        article_id = extract_article_id(normalized_url)
+        validate_article_id(article_id)
+    except ValueError as error:
+        raise ValueError("Invalid URL") from error
 
     return normalized_url
 
@@ -82,7 +82,6 @@ def validate_article_id(article_id: str) -> str:
         raise ValueError("Article ID must be a non-empty string")
 
     cleaned_id = article_id.strip()
-
     if ARXIV_ID_PATTERN.fullmatch(cleaned_id):
         return cleaned_id
 
